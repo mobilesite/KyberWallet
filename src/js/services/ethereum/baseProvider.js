@@ -6,6 +6,7 @@ import abiDecoder from "abi-decoder"
 
 export default class BaseEthereumProvider {
 
+  // 在this上挂了三个合约对象和两个合约的地址
   initContract() {
     this.erc20Contract = new this.rpc.eth.Contract(constants.ERC20)
     this.networkAddress = BLOCKCHAIN_INFO.network
@@ -14,10 +15,12 @@ export default class BaseEthereumProvider {
     this.wrapperContract = new this.rpc.eth.Contract(constants.KYBER_WRAPPER, this.wrapperAddress)
   }
 
+  // web3.js的版本
   version() {
     return this.rpc.version
   }
 
+  // 获取gasPrice
   getGasPrice() {
     return new Promise((resolve, reject) => {
       this.rpc.eth.getGasPrice()
@@ -30,6 +33,7 @@ export default class BaseEthereumProvider {
     })
   }
 
+  // 判断节点是否连接上
   isConnectNode() {
     return new Promise((resolve, reject) => {
       this.rpc.eth.getBlock("latest", false).then((block) => {
@@ -38,7 +42,7 @@ export default class BaseEthereumProvider {
         } else {
           resolve(false)
         }
-      }).catch((errr) => {
+      }).catch((err) => {
         resolve(false)
       })
     })
@@ -51,8 +55,10 @@ export default class BaseEthereumProvider {
     // })
   }
 
+  //为什么先从服务端去请求，而不是从web3取？
   getLatestBlock() {
     return new Promise((resolve, rejected) => {
+      // 这里直接使用了fetch这个JavaScript的新API
       fetch(BLOCKCHAIN_INFO.history_endpoint + '/getLatestBlock', {
         method: 'GET',
         headers: {
@@ -94,6 +100,8 @@ export default class BaseEthereumProvider {
     })
   }
 
+
+  //获取所有代币的余额
   getAllBalancesToken(address, tokens) {
     var promises = Object.keys(tokens).map(index => {
       var token = tokens[index]
