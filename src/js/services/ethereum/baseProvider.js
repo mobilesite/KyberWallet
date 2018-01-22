@@ -15,7 +15,7 @@ export default class BaseEthereumProvider {
   }
 
   version() {
-    return this.rpc.version.api
+    return this.rpc.version
   }
 
   getGasPrice() {
