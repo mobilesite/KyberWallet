@@ -12,7 +12,7 @@ class BaseEthereumProvider {
 
   }
   initContract() {
-    this.erc20Contract = new this.rpc.eth.Contract(constants.ERC20)
+    this.erc20Contract = new this.rpc.eth.Contract(constants.ERC20) //代币合约对象
     this.networkAddress = BLOCKCHAIN_INFO.network
     this.wrapperAddress = BLOCKCHAIN_INFO.wrapper
     this.networkContract = new this.rpc.eth.Contract(constants.KYBER_NETWORK, this.networkAddress)

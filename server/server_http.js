@@ -3,7 +3,7 @@ var express = require('express');
 
 var cors = require('cors')
 var app = express()
-app.use(cors())
+app.use(cors()) //允许所有域名的跨域访问
 var bodyParser = require('body-parser')
 
 app.use(bodyParser.json())
