@@ -29,7 +29,7 @@ export default class EthereumService extends React.Component {
     //this.wsProvider = this.getWebsocketProvider()
     this.wsProvider = false
 
-    this.initProvider(props.default)
+    this.initProvider(props.default) // porps.default实际传入的是'http'，所以在initProvider中实际上是生成了一个httpProvider。
   }
 
   initProvider(provider) {

@@ -22,7 +22,7 @@ class EthereumService {
     //get random node
     var httpArr = BLOCKCHAIN_INFO.connections.http
     var randomNum = Math.floor((Math.random() * httpArr.length))
-    this.httpUrl = httpArr[randomNum]
+    this.httpUrl = httpArr[randomNum] // 因为配置中，http节点有多个，所以只需要选择一个即可
 
     this.wsUrl = BLOCKCHAIN_INFO.connections.ws
     // this.wsUrl = "ws://localhost:8546"
@@ -153,6 +153,7 @@ class EthereumService {
       }
      // console.log("get logs")
       try {
+        
         var events = await this.currentProvider.getLogExchange(currentBlock, toBlock)
         //console.log("events etherscan: " + events)
         this.handleEvent(events)

@@ -11,6 +11,8 @@ class BaseEthereumProvider {
   constructor() {
 
   }
+
+  // 三个合约对象和两个地址
   initContract() {
     this.erc20Contract = new this.rpc.eth.Contract(constants.ERC20) //代币合约对象
     this.networkAddress = BLOCKCHAIN_INFO.network
@@ -20,7 +22,7 @@ class BaseEthereumProvider {
   }
 
   version() {
-    return this.rpc.version.api
+    return this.rpc.version
   }
   // getLatestBlock(){
   //   return new Promise((resolve, rejected)=>{
@@ -29,6 +31,7 @@ class BaseEthereumProvider {
   //     }
   //   })
   // }
+  // 从缓存上去拿到最近的区块序号
   getLatestBlockFromEtherScan() {
     // return new Promise((resolve, reject) => {
     //   this.rpc.eth.getBlock("latest", false).then((block) => {
@@ -68,7 +71,7 @@ class BaseEthereumProvider {
         res.on("end", () => {
           try {
             body = JSON.parse(body)
-            var blockNumber = this.rpc.eth.abi.decodeParameters(['uint256'], body.result)
+            var blockNumber = this.rpc.eth.abi.decodeParameters(['uint256'], body.result) // 
             resolve(blockNumber['0'])
           } catch (e) {
             console.log(e)
@@ -84,6 +87,7 @@ class BaseEthereumProvider {
     })
   }
 
+  // 从节点上拿到最近区块的节点序号
   getLatestBlockFromNode() {
     return new Promise((resolve, rejected) => {
       this.rpc.eth.getBlock("latest", false).then((block) => {

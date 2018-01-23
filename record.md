@@ -569,6 +569,19 @@ https://www.npmjs.com/package/cors
 
 除了上面这些接口、日志的功能外，这个目录还有一个 eth 目录，这个目录主要是用来与以太坊进行连接和交互用的。
 
+这里面，baseProvider、httpProvider、wsProvider三个文件是用来封装出两个provider组件，一个是http服务的，一个是ws服务的。而baseProvider则是二者的共同基础，提供了一个BaseEthereumProvider类，类中提供了如下一些方法：
+
+initContract 将三个合约对象、两个合约地址挂载到this上；
+
+version 返回当前所用的web3.js的版本；
+
+getLatestBlockFromEtherScan、getLatestBlockFromNode getLatestBlockFromEtherScan先从某个服务端API中去拿最新区块的区块number序号，拿不到的情况下再调用getLatestBlockFromNode去以太坊节点上拿。返回的是个数字。
+
+疑问：
+
+getRate、getAllRate、getAllRatesFromEtherscan、getAllRatesFromBlockchain、getAllRateFromNode、getAllRateUSD、getRateUSD、getLogExchange、getLogExchangeFromNode
+等方法，暂时没弄清楚其细节。具体是在什么地方用到的还不是很清楚？
+
 #### 获取 gasPrice
 
 ```js
@@ -637,9 +650,24 @@ new Promise((resolve, reject) => {
 });
 ```
 
-这里比较奇特的一点是，并没有直接使用`web3.eth.getBlock("latest", false).then`，而是先从服务端接口去取
+这里比较奇特的一点是，并没有直接使用`web3.eth.getBlock("latest", false).then`，而是先从服务端接口去取，可能是考虑缓存的原因，但是为什么要缓存呢？让速度更快吗？
 
-封装一个更通用的 fetch:
+刚刚又改成了从 api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${apikey}来获取,
+比如 apikey = D8YAEQ3V4THAPDA9YSB1YGA1QY9KAMHY6M。
+
+即从http://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=D8YAEQ3V4THAPDA9YSB1YGA1QY9KAMHY6M来获取。
+
+返回的结果如下：
+
+```json
+{ 
+    "jsonrpc": "2.0", 
+    "id": 83, 
+    "result": "0x4b9e30" 
+}
+```
+
+#### 封装一个更通用的 fetch:
 
 ```js
 const defaultHeaders = {
@@ -701,10 +729,8 @@ export function post(url, data, headers=defaultHeaders){
 
 ```js
 new Promise((resolve, reject) => {
-    web3.eth.getBalance(address).then(balance => {
-        
-    })
-})
+    web3.eth.getBalance(address).then(balance => {});
+});
 ```
 
 ### 在以太坊虚拟机上执行交易，不会出现在区块链上
@@ -725,4 +751,117 @@ web3.eth.call({
 web3.eth.Contract(constants.ERC20)
 
 然后通过合约拿到
+
+### 解码 ABI encoded parameters
+
+```
+web3.eth.abi.decodeParameters(typesArray, hexString);
+```
+
+```
+web3.eth.abi.decodeParameters(['string', 'uint256'], '0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000ea000000000000000000000000000000000000000000000000000000000000000848656c6c6f212521000000000000000000000000000000000000000000000000');
+> Result { '0': 'Hello!%!', '1': '234' }
+```
+
+### 获取最近一个区块的区块序号
+
+```js
+function getLatestBlockFromNode(){
+    new Promise(resolve, reject){
+        web3.eth.getBlock("latest", false)
+        .then(result => {
+            resolve(result.number)
+        })
+        .catch(err => {
+            reject(err)
+        })
+    }
+}
+```
+
+### 调用智能合约中的方法
+
+#### 创建智能合约对象
+
+`new web3.eth.Contract(jsonInterface[, address][, options])`
+
+第一个参数是智能合约中的abi对象，第二个参数是地址（可选，也可以后续通过.options.address指定），第三个参数，可选项，是携带的一些options参数
+
+```
+new web3.eth.Contract(constants.KYBER_NETWORK, this.networkAddress)
+```
+
+#### 在虚拟机中执行智能合约的方法
+
+`myContract.methods.myMethod([param1[, param2[, ...]]]).call(options[, callback])`
+
+```
+getRate(source, dest, quantity) {
+    return new Promise((resolve, rejected) => {
+      this.networkContract.methods.getExpectedRate(source, dest, quantity).call().then((result) => {
+        if (result != null) {
+          resolve(result)
+        }
+      }).catch(e =>{
+        rejected(e)
+      })
+    })
+  }
+```
+
+这个就调用了KYBER_NETWORK的getExpectedRate方法，传入了三个参数source, dest, quantity，这三个参数正好是KYBER_NETWORK的智能合约ABI对象数组中name: "getExpectedRate"所对应的inputs(如下)：
+
+```js
+{
+    constant: true,
+    inputs: [
+        { name: "source", type: "address" },
+        { name: "dest", type: "address" },
+        { name: "srcQuantity", type: "uint256" }
+    ],
+    name: "getExpectedRate",
+    outputs: [
+        { name: "expectedPrice", type: "uint256" },
+        { name: "slippagePrice", type: "uint256" }
+    ],
+    payable: false,
+    stateMutability: "view",
+    type: "function"
+}
+```
+
+### 怎么获得合约的某方法的编码过的ABI字节码，可以用在发送交易, 调用方法, 或作为参数传给另一个智能合约方法
+
+`myContract.methods.myMethod([param1[, param2[, ...]]]).encodeABI()`
+
+```js
+var dataAbi = this.wrapperContract.methods.getExpectedRates(this.networkAddress, sources, dests, quantity).encodeABI()
+var options = {
+    host: serverPoint,
+    path: `/api?module=proxy&action=eth_call&to=${this.wrapperAddress}&data=${dataAbi}&tag=latest&apikey=${api}`
+}
+```
+
+### 修正一个导致在本机运行时，不能导入账户的错误
+
+web3-eth库的index.js文件中，有一个错误，config一直没能添加进来，所以手动地加入：
+
+```
+var helpers = require('web3-core-helpers');
+
+//下面的这几行是自己添加的
+helpers.config = {
+    defaultBlock: 'latest',
+    defaultAccount: null
+}
+console.log('自己修改helpers，添加了config：', helpers);
+```
+
+同时需要修改webpack.config.js中的配置，以便于能够将上面这个修改打包进去。
+
+```
+exclude: /node_modules\/(?!(web3-eth)\/).*/,
+```
+
+### src/services/ethereum.js
 
