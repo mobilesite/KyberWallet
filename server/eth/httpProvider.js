@@ -19,19 +19,18 @@ class HttpEthereumProvider extends BaseEthereumProvider {
     async subcribeNewBlock(callBack){        
         //callBack()
         while(true){
-          await this.delay(10000)
+          await this.delay(10000) // 10秒钟执行一次
           await callBack()
-          //this.intervalID = setInterval(callBack, 10000)
+          //this.intervalId = setInterval(callBack, 10000)
         }
     }
 
     delay(second) {
       return new Promise(resolve => setTimeout(resolve, second))
-      
     }
 
     clearSubcription(){
-        clearInterval(this.intervalID)
+        clearInterval(this.intervalId)
     }
 
 }
