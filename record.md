@@ -869,3 +869,10 @@ exclude: /node_modules\/(?!(web3-eth)\/).*/,
 
 ### src/services/ethereum.js
 
+
+### 国际化
+
+react-localize-redux
+
+https://ryandrewjohnson.github.io/react-localize-redux/getting-started/
+
