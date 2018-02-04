@@ -569,6 +569,7 @@ https://www.npmjs.com/package/cors
 
 除了上面这些接口、日志的功能外，这个目录还有一个 eth 目录，这个目录主要是用来与以太坊进行连接和交互用的。
 
+
 这里面，baseProvider、httpProvider、wsProvider三个文件是用来封装出两个provider组件，一个是http服务的，一个是ws服务的。而baseProvider则是二者的共同基础，提供了一个BaseEthereumProvider类，类中提供了如下一些方法：
 
 initContract 将三个合约对象、两个合约地址挂载到this上；
@@ -581,6 +582,7 @@ getLatestBlockFromEtherScan、getLatestBlockFromNode getLatestBlockFromEtherScan
 
 getRate、getAllRate、getAllRatesFromEtherscan、getAllRatesFromBlockchain、getAllRateFromNode、getAllRateUSD、getRateUSD、getLogExchange、getLogExchangeFromNode
 等方法，暂时没弄清楚其细节。具体是在什么地方用到的还不是很清楚？
+
 
 #### 获取 gasPrice
 
@@ -729,8 +731,10 @@ export function post(url, data, headers=defaultHeaders){
 
 ```js
 new Promise((resolve, reject) => {
-    web3.eth.getBalance(address).then(balance => {});
-});
+    web3.eth.getBalance(address).then(balance => {
+        
+    })
+})
 ```
 
 ### 在以太坊虚拟机上执行交易，不会出现在区块链上
