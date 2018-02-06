@@ -211,7 +211,6 @@ class BaseEthereumProvider {
     return new Promise((resolve, rejected) => {
       https.get(options, res => {
         var statusCode = res.statusCode;
-        console.log(1111, options, statusCode)
         if (statusCode != 200) {
           rejected(new Error("Status etherscan is not 200 when get all rate"))
           return
