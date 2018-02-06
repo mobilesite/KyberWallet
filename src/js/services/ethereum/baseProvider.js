@@ -315,13 +315,16 @@ export default class BaseEthereumProvider {
 
   checkKyberEnable(){
     return new Promise((resolve, reject) => {
+      debugger
       this.networkContract.methods.enabled().call()
         .then((result) => {
+          debugger
           if (result != null) {
             resolve(result)
           }
         })
         .catch((err) => {
+          debugger
           // console.log(err)
           reject(err)
         })

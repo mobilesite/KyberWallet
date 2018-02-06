@@ -43,6 +43,7 @@ function* doTransactionFail(ethereum, account, e) {
 
 
 export function* processTransfer(action) {
+  debugger
   const { formId, ethereum, address,
     token, amount,
     destAddress, nonce, gas,
@@ -68,6 +69,7 @@ function* transferKeystore(action, callService) {
     token, amount,
     destAddress, nonce, gas,
     gasPrice, keystring, type, password, account, data, keyService, balanceData } = action.payload
+    debugger
   try {
     var rawTx = yield call(keyService.callSignTransaction, callService, formId, ethereum, address,
       token, amount,

@@ -600,8 +600,10 @@ function* debug(input, blockno, ethereum) {
 function* checkKyberEnable(){
   var state = store.getState()
   const ethereum = state.connection.ethereum
+  
   try{
     var enabled = yield call([ethereum, ethereum.call("checkKyberEnable")])
+    debugger
     yield put(actions.setKyberEnable(enabled))
   }catch(e){
     console.log(e.message)
