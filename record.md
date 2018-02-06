@@ -876,3 +876,147 @@ react-localize-redux
 
 https://ryandrewjohnson.github.io/react-localize-redux/getting-started/
 
+### 交易
+
+sagas的transferActions.js中：
+
+```js
+export function* processTransfer(action) {
+  const { formId, ethereum, address,
+    token, amount,
+    destAddress, nonce, gas,
+    gasPrice, keystring, type, password, account, data, keyService, balanceData } = action.payload
+  var callService = token == constants.ETHER_ADDRESS ? "sendEtherFromAccount" : "sendTokenFromAccount"
+  switch (type) {
+    case "keystore":
+      yield call(transferKeystore, action, callService)
+      break
+    case "privateKey":
+    case "trezor":
+    case "ledger":
+      yield call(transferColdWallet, action, callService)
+      break
+    case "metamask":
+      yield call(transferMetamask, action, callService)
+      break
+  }
+}
+```
+
+services/keys/baseKey.js中：
+
+```js
+//发送以太币
+export const sendEtherFromAccount = (
+  id, ethereum, account, sourceToken, sourceAmount,
+  destAddress, nonce, gas, gasPrice, keystring, accountType,
+  password) => {
+
+  const txParams = {
+    from:account,
+    nonce: nonce,
+    gasPrice: gasPrice,
+    gasLimit: gas,
+    to: destAddress,
+    value: sourceAmount,
+    // EIP 155 chainId - mainnet: 1, ropsten: 3
+    chainId: BLOCKCHAIN_INFO.networkId
+  }
+
+  return { txParams, keystring, password }
+}
+
+//发送其他代币
+export const sendTokenFromAccount = (
+  id, ethereum, account, sourceToken, sourceAmount,
+  destAddress, nonce, gas, gasPrice, keystring, accountType,
+  password) => {
+
+  var txData = ethereum.call("sendTokenData")(
+    sourceToken, sourceAmount, destAddress)
+  const txParams = {
+    from:account,
+    nonce: nonce,
+    gasPrice: gasPrice,
+    gasLimit: gas,
+    to: sourceToken,
+    value: '0x0', //这个地方是不是错误的？
+    data: txData,
+    // EIP 155 chainId - mainnet: 1, ropsten: 3
+    chainId: BLOCKCHAIN_INFO.networkId
+  }
+  return { txParams, keystring, password }
+}
+```
+
+sendEtherFromAccount发送以太币：
+
+直接从将传入的参数进行了组装后返回，返回的是`{ txParams, keystring, password }`的形式
+
+sendTokenFromAccount发送其他太币：
+调用的是
+
+var txData = ethereum.call("sendTokenData")(
+    sourceToken, sourceAmount, destAddress)
+
+方法来获得txData。
+
+然后同样也是组成了{ txParams, keystring, password }进行返回。不同的是，txParams中所包含的字段数量是不一样的。
+
+ethereum: 是一个EthereumService类的实例。
+
+EthereumService类提供了一个call方法：
+
+```js
+call(fn) {
+    return this.currentProvider[fn].bind(this.currentProvider)
+}
+```
+
+执行的是this.currentProvider上的方法，并且指定执行时this为this.currentProvider。
+
+this.currentProvider是HttpEthereumProvider类 或者 WebsocketEthereumProvider类的实例，而HttpEthereumProvider类 或者 WebsocketEthereumProvider类都扩展自BaseEthereumProvider类，所以call方法最后应该可以访问 BaseEthereumProvider类 以及 HttpEthereumProvider类 或者 WebsocketEthereumProvider类中的方法。
+
+sendTokenData就是BaseEthereumProvider类中的方法。
+
+```js
+sendTokenData(sourceToken, sourceAmount, destAddress) {
+    var tokenContract = this.erc20Contract
+    tokenContract.options.address = sourceToken
+    return tokenContract.methods.transfer(destAddress, sourceAmount).encodeABI()
+}
+```
+
+调用的实际上是以发送者的地址为地址的ERC20合约实例的`.transfer(destAddress, sourceAmount).encodeABI()`方法，传入参数是发往的地址和数量。
+
+其中， `this.erc20Contract = new this.rpc.eth.Contract(constants.ERC20)`
+
+function* transferKeystore(action, callService) {
+  const { formId, ethereum, address,
+    token, amount,
+    destAddress, nonce, gas,
+    gasPrice, keystring, type, password, account, data, keyService, balanceData } = action.payload
+  try {
+    var rawTx = yield call(keyService.callSignTransaction, callService, formId, ethereum, address,
+      token, amount,
+      destAddress, nonce, gas,
+      gasPrice, keystring, type, password)
+  } catch (e) {
+    yield put(actions.throwPassphraseError(e.message))
+    return
+  }
+  try {
+    yield put(actions.prePareBroadcast(balanceData))
+    const hash = yield call(ethereum.call("sendRawTransaction"), rawTx, ethereum)
+    yield call(runAfterBroadcastTx, ethereum, rawTx, hash, account, data)
+  } catch (e) {
+    yield call(doTransactionFail, ethereum, account, e.message)
+  }
+
+}
+
+
+
+
+
+
