@@ -31,6 +31,7 @@ const middleware = applyMiddleware(
 
 const store = createStore(
   reducer, undefined, compose(middleware))
+  
 sagaMiddleware.run(rootSaga)
 
 
